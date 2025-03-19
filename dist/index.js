@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 const payment_1 = __importDefault(require("./routes/paymentRoute/payment"));
 const clientRoute_1 = __importDefault(require("./routes/clientRoute/clientRoute"));
 const app = (0, express_1.default)();
-// Middleware
+// Middleware cnvcn
 app.use(express_1.default.json());
 // Routes
 app.use('/stripe', payment_1.default);

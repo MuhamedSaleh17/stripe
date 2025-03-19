@@ -2,6 +2,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cors from "cors";
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -9,6 +11,7 @@ import stripeRouter from './routes/paymentRoute/payment';
 import clientRoute from './routes/clientRoute/clientRoute';
 
 const app = express();
+app.use(cors());
 
 // Middleware cnvcn
 app.use(express.json());
