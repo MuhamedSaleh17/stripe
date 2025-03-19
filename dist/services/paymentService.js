@@ -6,9 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentService = void 0;
 // services/payment.service.ts
 const stripe_1 = __importDefault(require("stripe"));
-const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-02-24.acacia', // Adjust to your Stripe API version
-});
+const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY
+// , {
+//   apiVersion: '2025-02-24.acacia', // Adjust to your Stripe API version
+// }
+);
 class PaymentService {
     async createCheckoutSession(items) {
         try {
