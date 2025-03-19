@@ -10,7 +10,7 @@ import clientRoute from './routes/clientRoute/clientRoute';
 
 const app = express();
 
-// Middleware // d4g4sdg4s5dsdgsdgsdgdsfsdfd
+// Middleware 
 app.use(express.json());
 
 // Routes
