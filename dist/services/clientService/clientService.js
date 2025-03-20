@@ -10,7 +10,6 @@ const jwt_1 = require("../../utills/jwt");
 class clientService {
     async registerClient(clientData) {
         try {
-            console.log('Received client data:', clientData);
             const existingClient = await client_model_1.default.findOne({ email: clientData.email });
             if (existingClient) {
                 return { message: 'This email already exists, try another one' };
@@ -49,7 +48,8 @@ class clientService {
                 name: client.name,
                 phone: client.phone,
                 steps: client.steps,
-                companies: client.companies,
+                company: client.company,
+                subsidiaries: client.subsidiaries,
                 connection: client.connection,
                 paid: client.paid,
                 createdAt: client.createdAt,

@@ -16,104 +16,161 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
   try {
 
     const client = await ClientModel.findById(req.body.user.clientId)
-    console.log(req.body.subDomain);
+     await ClientModel.findByIdAndUpdate(req.body.user.clientId, 
+      {
+        $set: {
+          company: req.body.company, // No array, just an object
+          subsidiaries: req.body.subsidiaries,
+        },
+      },
+      { new: true }
+    );
+    
+   
+    const { company, subsidiaries = [] } = req.body;
 
-
-    await ClientModel.findByIdAndUpdate(req.body.user.clientId, {
-      $push: {
-        companies: {
-          type: req.body.type,
-          name: req.body.name,
-          quantity: req.body.quantity,
-          address: req.body.address,
-          subDomains: req.body.subDomain,
-          subsidiaries: req.body.subsidiaries
-        }
-      }
-    });
-
-
-    const { type, package: pkg, subsidiaries }: { type: string; package: keyof typeof packagePrices; subsidiaries: any[] } = req.body;
-    // Array to hold items for the checkout session
     const items = [];
-
-    if (type === "single") {
-      // Handle single package purchase
+    
+    if (company.type === "single") {
+      const pkg = company.package as keyof typeof packagePrices;
       if (!pkg || !validPackages.includes(pkg)) {
         throw new Error("Invalid or missing package name");
       }
       items.push({
         name: pkg,
-        price: packagePrices[pkg],
-        quantity: 1
+        price: packagePrices[pkg] * 100, // Convert to cents
+        quantity: company.quantity || 1
       });
-    } else if (type === "holdings") {
-      // Handle Holdings purchase
+    } else if (company.type === "holdings") {
       if (!Array.isArray(subsidiaries) || subsidiaries.length === 0) {
         throw new Error("Subsidiaries must be a non-empty array");
       }
       // Add the Holdings base item
       items.push({
-        name: "Holdings Base",
-        price: packagePrices["HoldingsBase"],
-        quantity: req.body.quantity,
-      
+        name: "HoldingsBase",
+        price: packagePrices["HoldingsBase"] * 100, // Convert to cents
+        quantity: 1
       });
       // Add each subsidiary package
-      for (const sub of subsidiaries as { package: keyof typeof packagePrices; quantity: number }[]) {
+      for (const sub of subsidiaries as Array<{ package: keyof typeof packagePrices; quantity: number }>) {
         if (!sub.package || !validPackages.includes(sub.package) || !sub.quantity || sub.quantity < 1) {
           throw new Error("Invalid subsidiary package or quantity");
         }
         items.push({
           name: sub.package,
-          price: packagePrices[sub.package],
+          price: packagePrices[sub.package] * 100, // Convert to cents
           quantity: sub.quantity
         });
       }
     } else {
       throw new Error("Invalid type: must be 'single' or 'holdings'");
     }
-
-
-
-    const session = await stripeClient.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      success_url: 'https://www.google.com',
-      cancel_url: 'https://www.youtube.com',
-      // line_items: req.body.items.map((item: { 
-      //   id: number; 
-      //   quantity: number; 
-      //   name: string; 
-      //   price: number 
-      // }) => ({
-      //   price_data: {
-      //     currency: 'usd',
-      //     product_data: {
-      //       name: item.name,
-      //     },
-      //     unit_amount: item.price,
-      //   },
-      //   quantity: item.quantity,
-      // })),
-      line_items: items.map(item => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name
+    
+    try {
+      const session = await stripeClient.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        success_url: 'https://www.google.com',
+        cancel_url: 'https://www.youtube.com',
+        line_items: items.map(item => ({
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: item.name
+            },
+            unit_amount: item.price
           },
-          unit_amount: item.price
-        },
-        quantity: item.quantity
-      }))
-    });
+          quantity: item.quantity
+        }))
+      });
+    
+      res.json({ sessionId: session.url });
+    } catch (err) {
+      console.error('Error creating checkout session:', err);
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    }
 
-    res.json({ sessionId: session.url });
+
+    // Array to hold items for the checkout session
+    // const items = [];
+    // console.log(pkg)
+    // if (company.type === "single") {
+    //   // Handle single package purchase
+    //   // if (!pkg || !validPackages.includes(pkg)) {
+    //   //   throw new Error("Invalid or missing package name");
+    //   // }
+    //   items.push({
+    //     name: pkg,
+    //     price: packagePrices[pkg],
+    //     quantity: 1
+    //   });
+    // } else if (company.type === "holdings") {
+    //   // Handle Holdings purchase
+    //   if (!Array.isArray(subsidiaries) || subsidiaries.length === 0) {
+    //     throw new Error("Subsidiaries must be a non-empty array");
+    //   }
+    //   // Add the Holdings base item
+    //   items.push({
+    //     name: "Holdings Base",
+    //     price: packagePrices["HoldingsBase"],
+    //     quantity: req.body.quantity,
+      
+    //   });
+    //   // Add each subsidiary package
+    //   for (const sub of subsidiaries as { package: keyof typeof packagePrices; quantity: number }[]) {
+    //     if (!sub.package || !validPackages.includes(sub.package) || !sub.quantity || sub.quantity < 1) {
+    //       throw new Error("Invalid subsidiary package or quantity");
+    //     }
+    //     items.push({
+    //       name: sub.package,
+    //       price: packagePrices[sub.package],
+    //       quantity: sub.quantity
+    //     });
+    //   }
+    // } else {
+    //   throw new Error("Invalid type: must be 'single' or 'holdings'");
+    // }
+
+
+
+    // const session = await stripeClient.checkout.sessions.create({
+    //   payment_method_types: ['card'],
+    //   mode: 'payment',
+    //   success_url: 'https://www.google.com',
+    //   cancel_url: 'https://www.youtube.com',
+    //   // line_items: req.body.items.map((item: { 
+    //   //   id: number; 
+    //   //   quantity: number; 
+    //   //   name: string; 
+    //   //   price: number 
+    //   // }) => ({
+    //   //   price_data: {
+    //   //     currency: 'usd',
+    //   //     product_data: {
+    //   //       name: item.name,
+    //   //     },
+    //   //     unit_amount: item.price,
+    //   //   },
+    //   //   quantity: item.quantity,
+    //   // })),
+    //   line_items: items.map(item => ({
+    //     price_data: {
+    //       currency: 'usd',
+    //       product_data: {
+    //         name: item.name
+    //       },
+    //       unit_amount: item.price
+    //     },
+    //     quantity: item.quantity
+    //   }))
+    // });
+
+    // res.json({ sessionId: session.url });
   } catch (err) {
     console.error('Error creating checkout session:', err);
     res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
-};
+}
 // async (req: Request, res: Response): Promise<void> => 
 export const handleWebhook = async (req: Request, res: Response): Promise<any> => {
   let event = req.body;

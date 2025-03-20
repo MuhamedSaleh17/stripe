@@ -15,6 +15,7 @@ app.use(cors());
 
 // Middleware cnvcn
 app.use(express.json());
+    // ,"dev": "nodemon --exec ts-node src/index.ts"
 
 // Routes
 app.use('/stripe', stripeRouter);

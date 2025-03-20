@@ -7,7 +7,6 @@ export class clientService {
 
     async registerClient(clientData: Partial<IClient>): Promise<{ token?: string, message: string }> {
         try {
-        console.log('Received client data:', clientData);
         const existingClient = await ClientModel.findOne({ email: clientData.email });
         if (existingClient) {
           return { message: 'This email already exists, try another one' };
@@ -55,7 +54,8 @@ export class clientService {
             name: client.name,
             phone: client.phone,
             steps: client.steps,
-            companies: client.companies,
+            company: client.company,
+            subsidiaries: client.subsidiaries,
             connection: client.connection,
             paid: client.paid,
             createdAt: client.createdAt,

@@ -36,22 +36,22 @@ const clientSchema = new mongoose_1.Schema({
         type: String,
         enum: Object.values(StepsEnum),
     },
-    companies: {
+    company: {
         type: { type: String },
         name: String,
         quantity: Number,
         address: String,
         subDomain: String,
-        subsidiaries: [
-            {
-                name: String,
-                package: String,
-                quantity: Number,
-                address: String,
-                subDomain: String,
-            }
-        ] // ✅ No need for `?`, Mongoose handles optional fields
     },
+    subsidiaries: [
+        {
+            name: String,
+            package: String,
+            quantity: Number,
+            address: String,
+            subDomain: String,
+        }
+    ],
     connection: [
         { companyName: String, subDomain: String, db: String }
     ],
