@@ -15,8 +15,34 @@ const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
 export const createCheckoutSession = async (req: Request, res: Response) => {
   try {
 
+
+
+
+
+
     const client = await ClientModel.findById(req.body.user.clientId)
-     await ClientModel.findByIdAndUpdate(req.body.user.clientId, 
+
+    function generateSubDomain(name: string): string {
+      return name
+        .toLowerCase() // Convert to lowercase
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove special characters
+    }
+
+    if (req.body.company && req.body.company.name) {
+      req.body.company.subDomain = generateSubDomain(req.body.company.name);
+    }
+    if (req.body.subsidiaries && Array.isArray(req.body.subsidiaries)) {
+      req.body.subsidiaries = req.body.subsidiaries.map((subsidiary: any) => {
+        if (subsidiary.name) {
+          subsidiary.subDomain = generateSubDomain(subsidiary.name);
+        }
+        return subsidiary;
+      });
+    }
+
+
+    await ClientModel.findByIdAndUpdate(req.body.user.clientId,
       {
         $set: {
           company: req.body.company, // No array, just an object
@@ -25,12 +51,12 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
       },
       { new: true }
     );
-    
-   
+
+
     const { company, subsidiaries = [] } = req.body;
 
     const items = [];
-    
+
     if (company.type === "single") {
       const pkg = company.package as keyof typeof packagePrices;
       if (!pkg || !validPackages.includes(pkg)) {
@@ -65,7 +91,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     } else {
       throw new Error("Invalid type: must be 'single' or 'holdings'");
     }
-    
+
     try {
       const session = await stripeClient.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -83,7 +109,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
           quantity: item.quantity
         }))
       });
-    
+
       res.json({ sessionId: session.url });
     } catch (err) {
       console.error('Error creating checkout session:', err);
@@ -114,7 +140,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     //     name: "Holdings Base",
     //     price: packagePrices["HoldingsBase"],
     //     quantity: req.body.quantity,
-      
+
     //   });
     //   // Add each subsidiary package
     //   for (const sub of subsidiaries as { package: keyof typeof packagePrices; quantity: number }[]) {

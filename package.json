@@ -5,6 +5,8 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node dist/index.js"
+        
+
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
